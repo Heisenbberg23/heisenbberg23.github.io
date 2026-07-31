@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Services Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#0E2A3B;
+    --ink-light:#3C5A6B;
+    --reef:#146B63;
+    --reef-light:#E3F1EE;
+    --sand:#F6F1E4;
+    --sand-deep:#EDE3C8;
+    --gold:#B98A3E;
+    --gold-light:#F6ECD9;
+    --coral:#C85A3B;
+    --white:#FFFFFF;
+    --line: rgba(14,42,59,0.12);
+    --shadow: 0 2px 20px rgba(14,42,59,0.08);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--sand);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height:1.5;
+    padding: 32px 16px 80px;
+  }
+  body[data-lang="ar"]{ font-family: 'Tajawal','Cairo', sans-serif; direction: rtl; }
+
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  .langbar{
+    display:flex; justify-content:flex-end; gap:8px; margin-bottom: 24px;
+  }
+  .langbtn{
+    font-family: inherit; font-size: 13px; font-weight:600; letter-spacing:.02em;
+    padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--white); color: var(--ink-light); cursor:pointer;
+    transition: all .15s ease;
+  }
+  .langbtn.active{ background: var(--ink); color: var(--sand); border-color: var(--ink); }
+  .langbtn:hover:not(.active){ border-color: var(--ink-light); }
+
+  header{ margin-bottom: 36px; }
+  .eyebrow{
+    font-size: 12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color: var(--reef); margin: 0 0 10px;
+  }
+  h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size: clamp(28px,4vw,42px);
+    margin: 0 0 10px; color: var(--ink); letter-spacing:-0.01em;
+  }
+  body[data-lang="ar"] h1{ font-family:'Cairo', sans-serif; font-weight:700; }
+  .lede{ font-size:16px; color: var(--ink-light); max-width: 620px; margin:0; }
+
+  .layout{ display:grid; grid-template-columns: 1fr 340px; gap: 28px; align-items:start; }
+  @media (max-width: 860px){ .layout{ grid-template-columns: 1fr; } }
+
+  .categories{ display:flex; flex-direction:column; gap: 20px; }
+
+  .cat{
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--line); overflow:hidden;
+  }
+  .cat-head{
+    display:flex; align-items:center; gap:12px; padding: 18px 22px;
+    border-bottom: 1px solid var(--line); background: var(--sand);
+  }
+  .cat-num{
+    font-family:'Fraunces', serif; font-size:13px; font-weight:600; color: var(--reef);
+    background: var(--reef-light); width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .cat-title{ font-size:16px; font-weight:700; color: var(--ink); }
+  .cat-body{ padding: 6px 22px 4px; }
+
+  .item{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  .item:last-child{ border-bottom:none; }
+  .item-main{ flex:1; min-width:0; }
+  .item-name-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .item-name{ font-size:14.5px; font-weight:600; color: var(--ink); }
+  .badge{
+    font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color: var(--coral); background: #FBEAE4; padding: 2px 8px; border-radius:999px;
+  }
+  .item-desc{ font-size:13px; color: var(--ink-light); margin-top:3px; }
+  .item-price{ font-size:12.5px; color: var(--reef); font-weight:600; margin-top:5px; }
+
+  .control{ flex-shrink:0; display:flex; align-items:center; }
+
+  .radio-dot{
+    width:22px; height:22px; border-radius:50%; border:2px solid var(--line);
+    cursor:pointer; position:relative; transition: border-color .15s;
+  }
+  .radio-dot.checked{ border-color: var(--reef); }
+  .radio-dot.checked::after{
+    content:''; position:absolute; inset:4px; border-radius:50%; background: var(--reef);
+  }
+
+  .checkbox{
+    width:22px; height:22px; border-radius:6px; border:2px solid var(--line);
+    cursor:pointer; position:relative; transition: border-color .15s, background .15s;
+  }
+  .checkbox.checked{ background: var(--reef); border-color: var(--reef); }
+  .checkbox.checked::after{
+    content:''; position:absolute; left:6px; top:2px; width:6px; height:11px;
+    border:solid white; border-width:0 2px 2px 0; transform: rotate(45deg);
+  }
+
+  .stepper{ display:flex; align-items:center; gap:10px; }
+  .stepbtn{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
+    background: var(--white); color: var(--ink); font-size:15px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+    transition: all .12s;
+  }
+  .stepbtn:hover{ border-color: var(--reef); color: var(--reef); }
+  .stepval{ font-size:14px; font-weight:600; min-width:14px; text-align:center; }
+
+  .clickable{ cursor:pointer; }
+
+  /* summary panel */
+  .summary{
+    background: var(--ink); color: var(--sand); border-radius: var(--radius);
+    padding: 24px 22px; position: sticky; top: 20px;
+  }
+  .summary-title{
+    font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px;
+    color: var(--sand);
+  }
+  body[data-lang="ar"] .summary-title{ font-family:'Cairo', sans-serif; }
+  .summary-sub{ font-size:12.5px; color: rgba(246,241,228,0.6); margin: 0 0 18px; }
+
+  .ticket-list{ display:flex; flex-direction:column; gap:10px; min-height: 40px; margin-bottom: 14px; }
+  .ticket-empty{ font-size:13px; color: rgba(246,241,228,0.55); padding: 10px 0; }
+  .ticket-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    font-size:13px; border-bottom: 1px dashed rgba(246,241,228,0.18); padding-bottom:8px;
+  }
+  .ticket-name{ color: rgba(246,241,228,0.92); }
+  .ticket-price{ color: var(--gold); font-weight:600; white-space:nowrap; }
+
+  .total-block{ border-top: 1px solid rgba(246,241,228,0.2); padding-top: 16px; margin-top: 4px; }
+  .total-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .total-label{ font-size:13px; color: rgba(246,241,228,0.7); }
+  .total-value{ font-family:'Fraunces', serif; font-size:24px; font-weight:600; color:var(--sand); }
+  .total-value .to{ color: rgba(246,241,228,0.5); font-size:16px; margin: 0 4px; }
+  .recurring-row{ font-size:12.5px; color: var(--gold); margin-top:2px; }
+
+  .cta{
+    display:block; width:100%; text-align:center; margin-top: 18px;
+    background: var(--gold); color: var(--ink); font-weight:700; font-size:14.5px;
+    border:none; border-radius: 999px; padding: 13px 18px; cursor:pointer;
+    text-decoration:none; transition: transform .12s, background .15s;
+  }
+  .cta:hover{ background:#CB9C4F; }
+  .cta:active{ transform: scale(0.98); }
+  .cta-note{ font-size:11.5px; color: rgba(246,241,228,0.5); text-align:center; margin-top:10px; }
+
+  .footer-note{
+    margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 13.5px; color: var(--ink-light); font-style: italic; max-width: 700px;
+  }
+  .footer-contacts{ font-size:13.5px; color: var(--reef); font-weight:600; margin-top:10px; }
+</style>
+</head>
+<body data-lang="ru">
+<div class="wrap">
+
+  <div class="langbar">
+    <button class="langbtn" data-setlang="en">EN</button>
+    <button class="langbtn active" data-setlang="ru">RU</button>
+    <button class="langbtn" data-setlang="ar">AR</button>
+  </div>
+
+  <header>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="lede" data-t="lede"></p>
+  </header>
+
+  <div class="layout">
+    <div class="categories" id="categories"></div>
+
+    <aside class="summary">
+      <p class="summary-title" data-t="summaryTitle"></p>
+      <p class="summary-sub" data-t="summarySub"></p>
+      <div class="ticket-list" id="ticketList"></div>
+      <div class="total-block">
+        <div class="total-row">
+          <span class="total-label" data-t="totalLabel"></span>
+          <span class="total-value" id="totalValue">$0</span>
+        </div>
+        <div class="recurring-row" id="recurringRow" style="display:none;"></div>
+      </div>
+      <a href="#" class="cta" id="ctaBtn" data-t="cta"></a>
+      <p class="cta-note" data-t="ctaNote"></p>
+    </aside>
+  </div>
+
+  <p class="footer-note" data-t="footerNote"></p>
+  <p class="footer-contacts">WhatsApp / Telegram: wa.me/201207801998 · t.me/joshndoesent</p>
+
+</div>
+
+<script>
+if(window.NodeList && !NodeList.prototype.forEach){ NodeList.prototype.forEach = Array.prototype.forEach; }
+const DATA = [
+  { key:"website", items:[
+    { id:"w_none", group:"website", type:"radio", price:[0,0], name:{en:"No website needed",ru:"Сайт не нужен",ar:"لا حاجة لموقع"}, desc:{en:"",ru:"",ar:""} },
+    { id:"w_landing", group:"website", type:"radio", price:[150,250], name:{en:"Landing page",ru:"Лендинг (1 страница)",ar:"صفحة هبوط"}, desc:{en:"Services, photos, contact info, WhatsApp/Telegram buttons, mobile-friendly",ru:"Услуги/меню, фото, контакты, кнопки WhatsApp/Telegram, адаптация под телефон",ar:"الخدمات، الصور، معلومات الاتصال، أزرار واتساب/تيليجرام"} },
+    { id:"w_business", group:"website", type:"radio", price:[300,500], name:{en:"Business website (3–5 pages)",ru:"Сайт-визитка (3–5 страниц)",ar:"موقع أعمال (3-5 صفحات)"}, desc:{en:"About, gallery, reviews, basic SEO, contact form",ru:"О нас, галерея, отзывы, базовое SEO, форма заявки",ar:"من نحن، معرض، آراء العملاء، تحسين محركات البحث الأساسي"}, badge:{en:"Popular",ru:"Популярно",ar:"شائع"} },
+    { id:"w_booking", group:"website", type:"radio", price:[500,900], name:{en:"Booking / ordering website",ru:"Сайт с бронированием/заказом",ar:"موقع حجز / طلب"}, desc:{en:"Booking or ordering form, service catalog with pricing, WhatsApp/Telegram integration",ru:"Форма бронирования/заказа, каталог услуг с ценами, интеграция с WhatsApp/Telegram",ar:"نموذج حجز أو طلب، كتالوج خدمات مع الأسعار"} },
+  ]},
+  { key:"addons", items:[
+    { id:"a_lang", type:"stepper", max:3, price:[80,150], name:{en:"Extra language",ru:"Доп. язык (RU/EN/AR)",ar:"لغة إضافية"}, desc:{en:"Per additional language added to your site",ru:"За каждый дополнительный язык",ar:"لكل لغة إضافية تضاف للموقع"} },
+    { id:"a_admin", type:"checkbox", price:[150,300], name:{en:"Admin panel",ru:"Админ-панель",ar:"لوحة تحكم"}, desc:{en:"Edit prices, photos and text yourself — no developer needed",ru:"Меняйте цены, фото и тексты сами — без разработчика",ar:"عدّل الأسعار والصور والنصوص بنفسك دون الحاجة لمطور"} },
+  ]},
+  { key:"apps", items:[
+    { id:"p_none", group:"app", type:"radio", price:[0,0], name:{en:"No app needed",ru:"Приложение не нужно",ar:"لا حاجة لتطبيق"}, desc:{en:"",ru:"",ar:""} },
+    { id:"p_proto", group:"app", type:"radio", price:[400,800], name:{en:"Interactive prototype",ru:"Интерактивный прототип",ar:"نموذج أولي تفاعلي"}, desc:{en:"Clickable demo — great for showing partners or investors",ru:"Кликабельный демо-макет — для показа партнёрам или инвесторам",ar:"عرض توضيحي قابل للنقر لعرضه على الشركاء أو المستثمرين"} },
+    { id:"p_full", group:"app", type:"radio", price:[1000,2500], name:{en:"Full app (PWA)",ru:"Полноценное приложение (PWA)",ar:"تطبيق كامل"}, desc:{en:"Catalog, cart, OTP login, chat, order tracking",ru:"Каталог, корзина, OTP-вход, чат, отслеживание заказа",ar:"كتالوج، سلة، تسجيل دخول، دردشة، تتبع الطلب"} },
+  ]},
+  { key:"seo", items:[
+    { id:"s_audit", type:"checkbox", price:[50,100], name:{en:"SEO audit",ru:"SEO-аудит",ar:"تدقيق سيو"}, desc:{en:"Why your site isn't ranking + a clear action list",ru:"Разбор, почему сайт не в топе + список действий",ar:"سبب عدم ظهور موقعك + قائمة إجراءات واضحة"} },
+    { id:"s_setup", type:"checkbox", price:[150,300], name:{en:"SEO setup",ru:"Настройка SEO",ar:"إعداد السيو"}, desc:{en:"Meta tags, page speed, structure, Google Business Profile",ru:"Метатеги, скорость, структура, Google Business Profile",ar:"العلامات الوصفية، سرعة الصفحة، الهيكل، ملف Google للأعمال"} },
+    { id:"s_ongoing", type:"checkbox", recurring:"month", price:[80,150], name:{en:"Ongoing SEO",ru:"Ведение SEO",ar:"سيو مستمر"}, desc:{en:"Monthly content work and ranking monitoring",ru:"Ежемесячная работа с контентом и отслеживание позиций",ar:"عمل شهري على المحتوى ومتابعة الترتيب"} },
+  ]},
+  { key:"bots", items:[
+    { id:"b_none", group:"bot", type:"radio", price:[0,0], name:{en:"No bot needed",ru:"Бот не нужен",ar:"لا حاجة لبوت"}, desc:{en:"",ru:"",ar:""} },
+    { id:"b_simple", group:"bot", type:"radio", price:[100,200], name:{en:"Simple Telegram bot",ru:"Простой Telegram-бот",ar:"بوت تيليجرام بسيط"}, desc:{en:"Order requests, FAQ, catalog",ru:"Приём заявок, FAQ, каталог",ar:"طلبات، أسئلة شائعة، كتالوج"} },
+    { id:"b_pay", group:"bot", type:"radio", price:[250,450], name:{en:"Bot with payments/booking",ru:"Бот с оплатой/бронированием",ar:"بوت مع دفع وحجز"}, desc:{en:"Payment integration (InstaPay), automatic notifications",ru:"Интеграция оплаты (InstaPay), автоуведомления",ar:"دمج الدفع، إشعارات تلقائية"} },
+  ]},
+  { key:"support", items:[
+    { id:"m_maint", type:"checkbox", recurring:"month", price:[30,60], name:{en:"Website maintenance",ru:"Техподдержка сайта",ar:"صيانة الموقع"}, desc:{en:"Edits, updates, hosting monitoring",ru:"Правки, обновления, контроль хостинга",ar:"تعديلات، تحديثات، مراقبة الاستضافة"} },
+    { id:"m_host", type:"checkbox", recurring:"year", price:[50,80], name:{en:"Hosting + domain",ru:"Хостинг + домен",ar:"استضافة + دومين"}, desc:{en:"Handled for you, passed on at cost",ru:"Берём на себя, передаём по себестоимости",ar:"نتولى الأمر ونمرره بالتكلفة"} },
+  ]},
+];
+
+const CAT_META = {
+  website: {en:"Website",ru:"Сайт",ar:"الموقع الإلكتروني"},
+  addons: {en:"Add-ons",ru:"Дополнения",ar:"إضافات"},
+  apps: {en:"Mobile app",ru:"Мобильное приложение",ar:"تطبيق الجوال"},
+  seo: {en:"SEO & Google visibility",ru:"SEO и видимость в Google",ar:"السيو وظهور جوجل"},
+  bots: {en:"Telegram bot",ru:"Telegram-бот",ar:"بوت تيليجرام"},
+  support: {en:"Ongoing support",ru:"Постоянная поддержка",ar:"الدعم المستمر"},
+};
+
+const STRINGS = {
+  en:{ eyebrow:"Sharm El Sheikh · Web development", title:"Build your package",
+    lede:"Pick what you need below and watch the price come together in real time. Everything is flexible — this is a starting point for our conversation, not a fixed bill.",
+    summaryTitle:"Your package", summarySub:"Updates as you choose",
+    totalLabel:"Estimated total", cta:"Send this to WhatsApp", ctaNote:"Opens WhatsApp with your selection pre-filled",
+    empty:"Nothing selected yet — pick a website type to start.",
+    footerNote:"We're open to discussing your budget and happy to work with whatever suits you. Our goal is to deliver great work, not just take your money. If it exists on the internet, we can build it.",
+    monthShort:"/mo", yearShort:"/yr", from:"one-time", waIntro:"Hi! I used your price calculator and put together this package:" },
+  ru:{ eyebrow:"Шарм-эль-Шейх · Веб-разработка", title:"Соберите свой пакет",
+    lede:"Выберите то, что вам нужно — и цена сложится в реальном времени. Всё гибко — это отправная точка для разговора, а не готовый счёт.",
+    summaryTitle:"Ваш пакет", summarySub:"Обновляется по мере выбора",
+    totalLabel:"Примерная сумма", cta:"Отправить в WhatsApp", ctaNote:"Откроется WhatsApp с готовым сообщением",
+    empty:"Пока ничего не выбрано — начните с типа сайта.",
+    footerNote:"Мы открыты обсуждать бюджет и готовы работать с тем, что устраивает клиента. Наша цель — сделать отличную работу, а не просто заработать деньги. Всё, что есть в интернете — мы можем сделать.",
+    monthShort:"/мес", yearShort:"/год", from:"разово", waIntro:"Здравствуйте! Я воспользовался вашим калькулятором цен и собрал такой пакет:" },
+  ar:{ eyebrow:"شرم الشيخ · تطوير الويب", title:"صمّم باقتك",
+    lede:"اختر ما تحتاجه وشاهد السعر يتشكل مباشرة. كل شيء مرن — هذه نقطة بداية للنقاش وليست فاتورة نهائية.",
+    summaryTitle:"باقتك", summarySub:"تتحدث مع كل اختيار",
+    totalLabel:"التكلفة التقريبية", cta:"إرسال عبر واتساب", ctaNote:"سيفتح واتساب برسالة جاهزة تحتوي على اختياراتك",
+    empty:"لم يتم اختيار شيء بعد — ابدأ باختيار نوع الموقع.",
+    footerNote:"نحن منفتحون لمناقشة ميزانيتك ومستعدون للعمل بما يناسبك. هدفنا تقديم عمل ممتاز، لا مجرد كسب المال. كل ما هو موجود على الإنترنت يمكننا تنفيذه.",
+    monthShort:"/شهرياً", yearShort:"/سنوياً", from:"مرة واحدة", waIntro:"مرحباً! استخدمت حاسبة الأسعار الخاصة بكم وقمت بتجميع هذه الباقة:" },
+};
+
+let currentLang = "ru";
+const state = {};
+DATA.forEach(cat => cat.items.forEach(it => {
+  if(it.type==="radio" && state[it.group]===undefined && it.price[0]===0) state[it.group] = it.id;
+  if(it.type==="checkbox") state[it.id] = false;
+  if(it.type==="stepper") state[it.id] = 0;
+}));
+
+function fmt(n){ return "$" + Math.round(n).toLocaleString("en-US"); }
+
+function itemById(id){
+  for(const cat of DATA) for(const it of cat.items) if(it.id===id) return it;
+}
+
+function computeTotals(){
+  let min=0,max=0, monthMin=0, monthMax=0, yearMin=0, yearMax=0;
+  const selected = [];
+  DATA.forEach(cat => cat.items.forEach(it => {
+    if(it.type==="radio"){
+      if(state[it.group]===it.id && it.price[0]>0){
+        min+=it.price[0]; max+=it.price[1];
+        selected.push({name:it.name[currentLang], price:it.price, recurring:null});
+      }
+    } else if(it.type==="checkbox"){
+      if(state[it.id]){
+        if(it.recurring==="month"){ monthMin+=it.price[0]; monthMax+=it.price[1]; }
+        else if(it.recurring==="year"){ yearMin+=it.price[0]; yearMax+=it.price[1]; }
+        else { min+=it.price[0]; max+=it.price[1]; }
+        selected.push({name:it.name[currentLang], price:it.price, recurring:it.recurring});
+      }
+    } else if(it.type==="stepper"){
+      const n = state[it.id];
+      if(n>0){
+        min += it.price[0]*n; max += it.price[1]*n;
+        selected.push({name:it.name[currentLang]+" ×"+n, price:[it.price[0]*n, it.price[1]*n], recurring:null});
+      }
+    }
+  }));
+  return {min,max,monthMin,monthMax,yearMin,yearMax,selected};
+}
+
+function render(){
+  document.body.setAttribute("data-lang", currentLang);
+  document.documentElement.setAttribute("lang", currentLang);
+  document.querySelectorAll(".langbtn").forEach(b=>b.classList.toggle("active", b.dataset.setlang===currentLang));
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    const key = el.getAttribute("data-t");
+    el.textContent = STRINGS[currentLang][key];
+  });
+
+  const container = document.getElementById("categories");
+  container.innerHTML = "";
+  let catIndex = 0;
+  DATA.forEach(cat => {
+    catIndex++;
+    const catEl = document.createElement("div");
+    catEl.className = "cat";
+    const head = document.createElement("div");
+    head.className = "cat-head";
+    head.innerHTML = `<span class="cat-num">${catIndex}</span><span class="cat-title">${CAT_META[cat.key][currentLang]}</span>`;
+    catEl.appendChild(head);
+    const body = document.createElement("div");
+    body.className = "cat-body";
+
+    cat.items.forEach(it => {
+      if(it.price[0]===0 && it.price[1]===0 && it.type==="radio") return; // skip "none" rows visually, handled via first option default
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const main = document.createElement("div");
+      main.className = "item-main";
+      const nameRow = document.createElement("div");
+      nameRow.className = "item-name-row";
+      const nm = document.createElement("span");
+      nm.className = "item-name"; nm.textContent = it.name[currentLang];
+      nameRow.appendChild(nm);
+      if(it.badge){
+        const b = document.createElement("span");
+        b.className="badge"; b.textContent = it.badge[currentLang];
+        nameRow.appendChild(b);
+      }
+      main.appendChild(nameRow);
+      if(it.desc && it.desc[currentLang]){
+        const d = document.createElement("div");
+        d.className="item-desc"; d.textContent = it.desc[currentLang];
+        main.appendChild(d);
+      }
+      const pr = document.createElement("div");
+      pr.className="item-price";
+      const suffix = it.recurring==="month" ? STRINGS[currentLang].monthShort : it.recurring==="year" ? STRINGS[currentLang].yearShort : "";
+      if(it.type==="stepper"){
+        pr.textContent = fmt(it.price[0]) + "–" + fmt(it.price[1]) + " " + (currentLang==="en"?"each":currentLang==="ru"?"за штуку":"لكل وحدة");
+      } else {
+        pr.textContent = fmt(it.price[0]) + "–" + fmt(it.price[1]) + suffix;
+      }
+      main.appendChild(pr);
+      row.appendChild(main);
+
+      const ctrl = document.createElement("div");
+      ctrl.className = "control";
+      if(it.type==="radio"){
+        const dot = document.createElement("div");
+        dot.className = "radio-dot" + (state[it.group]===it.id ? " checked" : "");
+        dot.onclick = () => { state[it.group] = it.id; render(); };
+        ctrl.appendChild(dot);
+        row.querySelector(".item-main").classList.add("clickable");
+        row.querySelector(".item-main").onclick = dot.onclick;
+      } else if(it.type==="checkbox"){
+        const box = document.createElement("div");
+        box.className = "checkbox" + (state[it.id] ? " checked" : "");
+        box.onclick = () => { state[it.id] = !state[it.id]; render(); };
+        ctrl.appendChild(box);
+        row.querySelector(".item-main").classList.add("clickable");
+        row.querySelector(".item-main").onclick = box.onclick;
+      } else if(it.type==="stepper"){
+        const step = document.createElement("div");
+        step.className = "stepper";
+        const minus = document.createElement("button");
+        minus.className="stepbtn"; minus.textContent="–";
+        minus.onclick = () => { state[it.id] = Math.max(0, state[it.id]-1); render(); };
+        const val = document.createElement("span");
+        val.className="stepval"; val.textContent = state[it.id];
+        const plus = document.createElement("button");
+        plus.className="stepbtn"; plus.textContent="+";
+        plus.onclick = () => { state[it.id] = Math.min(it.max, state[it.id]+1); render(); };
+        step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
+        ctrl.appendChild(step);
+      }
+      row.appendChild(ctrl);
+      body.appendChild(row);
+    });
+    catEl.appendChild(body);
+    container.appendChild(catEl);
+  });
+
+  const t = computeTotals();
+  const ticketList = document.getElementById("ticketList");
+  ticketList.innerHTML = "";
+  if(t.selected.length===0){
+    const e = document.createElement("div");
+    e.className="ticket-empty"; e.textContent = STRINGS[currentLang].empty;
+    ticketList.appendChild(e);
+  } else {
+    t.selected.forEach(s=>{
+      const r = document.createElement("div");
+      r.className="ticket-row";
+      const suffix = s.recurring==="month" ? STRINGS[currentLang].monthShort : s.recurring==="year" ? STRINGS[currentLang].yearShort : "";
+      r.innerHTML = `<span class="ticket-name">${s.name}</span><span class="ticket-price">${fmt(s.price[0])}–${fmt(s.price[1])}${suffix}</span>`;
+      ticketList.appendChild(r);
+    });
+  }
+
+  document.getElementById("totalValue").innerHTML =
+    fmt(t.min) + '<span class="to">–</span>' + fmt(t.max);
+
+  const rec = document.getElementById("recurringRow");
+  let recParts = [];
+  if(t.monthMax>0) recParts.push(fmt(t.monthMin)+"–"+fmt(t.monthMax)+STRINGS[currentLang].monthShort);
+  if(t.yearMax>0) recParts.push(fmt(t.yearMin)+"–"+fmt(t.yearMax)+STRINGS[currentLang].yearShort);
+  if(recParts.length){
+    rec.style.display = "block";
+    rec.textContent = "+ " + recParts.join(" · ");
+  } else {
+    rec.style.display = "none";
+  }
+
+  const cta = document.getElementById("ctaBtn");
+  const lines = t.selected.map(s=>{
+    const suffix = s.recurring==="month" ? STRINGS[currentLang].monthShort : s.recurring==="year" ? STRINGS[currentLang].yearShort : "";
+    return "• " + s.name + " (" + fmt(s.price[0]) + "–" + fmt(s.price[1]) + suffix + ")";
+  }).join("\n");
+  const msg = STRINGS[currentLang].waIntro + "\n\n" + (lines || "-") + "\n\n" +
+    STRINGS[currentLang].totalLabel + ": " + fmt(t.min) + "–" + fmt(t.max) +
+    (recParts.length ? " + " + recParts.join(" · ") : "");
+  cta.href = "https://wa.me/201207801998?text=" + encodeURIComponent(msg);
+  cta.target = "_blank";
+}
+
+document.querySelectorAll(".langbtn").forEach(b=>{
+  b.addEventListener("click", ()=>{ currentLang = b.dataset.setlang; render(); });
+});
+
+render();
+</script>
+</body>
+</html>
